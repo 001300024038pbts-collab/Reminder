@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reminder（仮）- ワイヤーフレーム実装</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Google Sans Text', 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #eef2f7;
+            color: #333333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* スマホ外枠シミュレーター */
+        .phone-container {
+            width: 375px;
+            height: 760px;
+            background-color: #ffffff;
+            border-radius: 36px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+            border: 8px solid #222222;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ステータスバー（時計など） */
+        .status-bar {
+            height: 24px;
+            background-color: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #666666;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        /* アプリヘッダー */
+        .app-header {
+            background-color: #1e40af; /* 深い青 */
+            color: #ffffff;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .app-title {
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .account-icon {
+            width: 32px;
+            height: 32px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .account-icon:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .account-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: #ffffff;
+        }
+
+        /* メインコンテンツエリア */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            background-color: #f8fafc;
+            padding: 16px;
+        }
+
+        /* 画面ごとの非表示制御 */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* バナー・告知用カードスタイル */
+        .info-card {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+            cursor: pointer;
+        }
+
+        .info-card h3 {
+            font-size: 15px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-card p {
+            font-size: 12px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        .info-card-secondary {
+            background: #ffffff;
+            border: 2px solid #3b82f6;
+            color: #1e3a8a;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 16px;
+            cursor: pointer;
+        }
+
+        .info-card-secondary h3 {
+            font-size: 15px;
+            margin-bottom: 6px;
+            color: #2563eb;
+        }
+
+        .info-card-secondary p {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.4;
+        }
+
+        /* 登録フォーム（高校生向けにわかりやすく） */
+        .form-section {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 14px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+
+        .form-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 10px;
+            border-left: 3px solid #2563eb;
+            padding-left: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: #2563eb;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* リスト表示アイテム（画面2） */
+        .feed-item {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border-left: 4px solid #3b82f6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .feed-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .teacher-avatar {
+            width: 24px;
+            height: 24px;
+            background-color: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: #475569;
+        }
+
+        .teacher-name {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333333;
+        }
+
+        .feed-body {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            background: #f8fafc;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .attachment-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #1d4ed8;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .feed-footer {
+            font-size: 10px;
+            color: #94a3b8;
+            text-align: right;
+            margin-top: 6px;
+        }
+
+        /* 設定画面（画面3） */
+        .settings-header {
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .settings-email {
+            font-size: 11px;
+            color: #2563eb;
+            background: #eff6ff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .settings-section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #334155;
+            margin: 16px 0 8px 0;
+        }
+
+        .class-select-list {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .class-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .class-item:last-child {
+            border-bottom: none;
+        }
+
+        .class-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-right: 12px;
+            accent-color: #2563eb;
+        }
+
+        /* フッターリンク（画面1にある利用規約など） */
+        .footer-links {
+            margin-top: 24px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 12px;
+        }
+
+        .footer-link-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 12px;
+            color: #64748b;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+        }
+
+        /* 下部ナビゲーションバー */
+        .bottom-nav {
+            height: 56px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            background-color: #ffffff;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: color 0.2s;
+            gap: 2px;
+        }
+
+        .nav-item.active {
+            color: #2563eb;
+            font-weight: bold;
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <!-- ステータスバー -->
+        <div class="status-bar">
+            <span>12:10</span>
+            <span style="display: flex; gap: 4px; align-items: center;">
+                <span>📶</span><span>🔋 95%</span>
+            </span>
+        </div>
+
+        <!-- アプリヘッダー -->
+        <header class="app-header">
+            <div class="app-title" id="dynamic-header-title">Reminder（仮）</div>
+            <div class="account-icon" onclick="switchScreen(3)" title="アカウント設定へ">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5-4-8-4z"/>
+                </svg>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="main-content">
+            
+            <!-- ① 画面1: ホーム / テスト・課題登録 -->
+            <div id="screen-home" class="screen active">
+                <!-- ワイヤーフレーム左画面のバナー１ -->
+                <div class="info-card" onclick="switchScreen(2)">
+                    <h3>
+                        <svg width="14" height="14" fill="white" viewBox="0 0 24 24" style="display:inline-block; vertical-align:middle;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-1 9h-4v-2h4v2zm0-4h-4V7h4v2zm-5 4H4v-2h9v2zm0-4H4V7h9v2z"/></svg>
+                        Classroom連絡 一括確認
+                    </h3>
+                    <p>もういちいち個別クラスを開く必要はありません。ここを開いて一括確認しましょう！</p>
+                </div>
+
+                <!-- ワイヤーフレーム左画面のバナー２ -->
+                <div class="info-card-secondary" onclick="alert('Classroomアプリを開きます（シミュレーション）')">
+                    <h3>課題 一括確認</h3>
+                    <p>「Classroom」アプリで一括確認できます。ここを押すと「Classroom」アプリを開きます。</p>
+                </div>
+
+                <!-- MUST機能: テスト・課題登録フォーム (新規追加して機能向上) -->
+                <div class="form-section">
+                    <div class="form-title">【自分で登録】テスト・課題リマインダー</div>
+                    <form id="reminder-form" onsubmit="addReminder(event)">
+                        <div class="form-group">
+                            <label>タイトル（例: 数学小テスト、英語提出物）</label>
+                            <input type="text" id="todo-title" class="form-control" placeholder="入力してください" required>
+                        </div>
+                        <div class="form-group">
+                            <label>提出期限 / 実施日</label>
+                            <input type="date" id="todo-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>クラス / 科目</label>
+                            <select id="todo-class" class="form-control">
+                                <option>XX期生 年次全体</option>
+                                <option>XX期生 CRYY</option>
+                                <option>XX期生 情報Ⅱ</option>
+                                <option>XXth CEⅢ②</option>
+                                <option>XXe FrançaisⅢ</option>
+                                <option>XX期生 物理</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-submit">リマインダーを追加</button>
+                    </form>
+                </div>
+
+                <!-- フッターリンク（手書き文字の再現部分） -->
+                <div class="footer-links">
+                    <div class="footer-link-item" onclick="alert('利用規約を開きます')">
+                        <span>利用規約</span><span>＞</span>
+                    </div>
+                    <div class="footer-link-item" onclick="alert('プライヴァシー・ポリシーを開きます')">
+                        <span>プライヴァシー・ポリシー</span><span>＞</span>
+                    </div>
+                    <div class="footer-link-item" onclick="alert('クレディット一覧を開きます')">
+                        <span>クレディット一覧</span><span>＞</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ② 画面2: Classroom連絡一括確認 (一覧表示) -->
+            <div id="screen-classroom" class="screen">
+                <div style="font-size: 11px; color:#64748b; margin-bottom: 10px; font-weight: bold;">
+                    選択されたクラスのタイムライン（最新順）
+                </div>
+
+                    <div id="timeline-container">
+                        <div class="feed-item" data-class="XX期生 年次全体">
+                            <div class="feed-header">
+                            <div class="teacher-avatar">T1</div>
+                            <div class="teacher-name">Teacher #1</div>
+                            </div>
+                        <div class="feed-body">
+                            【連絡】明日のHRの時間に記述模試の座席確認を行います。各自マイページを確認しておくこと。
+                        </div>
+                        <div class="feed-footer">From 「XX期生 年次全体」</div>
+                    </div>
+
+                    <div class="feed-item" data-class="XX期生 情報Ⅱ">
+                        <div class="feed-header">
+                        <div class="teacher-avatar">T2</div>
+                        <div class="teacher-name">Teacher #2</div>
+                    </div>
+                    <div class="feed-body">
+                    プログラミング課題の提出期限は今週金曜日の17:00までです。サンプルコードのファイルを添付します。
+                        </div>
+                        <a href="#" class="attachment-box" onclick="alert('ファイルをダウンロードします')">
+                            📎 Attachment.xxx
+                        </a>
+                        <div class="feed-footer">From 「XX期生 情報Ⅱ」</div>
+                    </div>
+        
+                    <div class="feed-item" data-class="XX期生 物理">
+                        <div class="feed-header">
+                            <div class="teacher-avatar">T3</div>
+                            <div class="teacher-name">Teacher #3</div>
+                        </div>
+                        <div class="feed-body">
+                            次回の物理の授業は第2実験室で行います。<br>教科書とノート、あとプリントを必ず忘れないように。
+                        </div>
+                        <div class="feed-footer">From 「XX期生 物理」</div>
+                    </div>
+                    <div class="feed-item" data-class="XXth CEⅢ②">
+                    <div class="feed-header">
+                <div class="teacher-avatar">T4</div>
+                            <div class="teacher-name">Teacher #4</div>
+                        </div>
+                        <div class="feed-body">
+                            We will have a "Unit 3AB" vocabulary test tommorow.  
+                        </div>
+                        <div class="feed-footer">From 「XXth CEⅢ②」</div>
+                    </div>
+
+                    <div class="feed-item" data-class="XXe FrançaisⅢ">
+                        <div class="feed-header">
+                            <div class="teacher-avatar">T5</div>
+                            <div class="teacher-name">Teacher #5</div>
+                        </div>
+                        <div class="feed-body">
+                            Les devoirs:<br>Créez 10 phrases qui incluent "dont" ou "où".
+                        </div>
+                        <div class="feed-footer">From 「XXe FrançaisⅢ」</div>
+                    </div>
+
+                    <div class="feed-item" data-class="XX期生 CRYY">
+                        <div class="feed-header">
+                            <div class="teacher-avatar">T6</div>
+                            <div class="teacher-name">Teacher #6</div>
+                        </div>
+                        <div class="feed-body">
+                            今日のLHRは文化祭のことについてです。
+                        </div>
+                        <div class="feed-footer">From 「XX期生 CRYY」</div>
+                    </div>
+
+                    <div class="feed-item" data-class="XXth DDⅡ②">
+                        <div class="feed-header">
+                            <div class="teacher-avatar">T7</div>
+                            <div class="teacher-name">Teacher #7</div>
+                        </div>
+                        <div class="feed-body">
+                            Discussion Topic: <br>"Arguing the curfew between the university student and its parent"
+                        </div>
+                        <div class="feed-footer">From 「XXth DDⅡ②」</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ③ 画面3: アカウント設定 / 通知設定 -->
+            <div id="screen-settings" class="screen">
+                <div class="settings-header">
+                    <div style="font-size: 16px; font-weight: bold;">アカウント設定</div>
+                    <div style="font-size: 13px; color: #475569; margin-top: 4px;">
+                        Classroom連携: <span style="color: #16a34a; font-weight: bold;">連携済み</span>
+                    </div>
+                    <span class="settings-email">account@gl.pen.kanagawa.ed.jp</span>
+                </div>
+
+                <div class="settings-section-title">クラス表示・リマインド通知設定</div>
+                <div style="font-size: 11px; color: #64748b; margin-bottom: 8px;">
+                    チェックを入れたクラスの連絡や提出物リマインドを受信します。
+                </div>
+
+                <div class="class-select-list">
+                    <div class="class-item">
+                        <input type="checkbox" id="c1" checked onchange="toggleNotification('XX期生 年次全体', this.checked)">
+                        <label for="c1">XX期生 年次全体</label>
+                    </div>
+                    <div class="class-item">
+                        <input type="checkbox" id="c2" checked onchange="toggleNotification('XX期生 CRYY', this.checked)">
+                        <label for="c2">XX期生 CRYY</label>
+                    </div>
+                    <div class="class-item">
+                        <input type="checkbox" id="c3" checked onchange="toggleNotification('XX期生 情報Ⅱ', this.checked)">
+                        <label for="c3">XX期生 情報Ⅱ</label>
+                    </div>
+                    <div class="class-item">
+                        <input type="checkbox" id="c4" checked onchange="toggleNotification('XXth CEⅢ②', this.checked)">
+                        <label for="c4">XXth CEⅢ②</label>
+                    </div>
+                    <div class="class-item">
+                        <input type="checkbox" id="c5" checked onchange="toggleNotification('XXe FrançaisⅢ', this.checked)">
+                        <label for="c5">XXe FrançaisⅢ</label>
+                    </div>
+                    <div class="class-item">
+                        <input type="checkbox" id="c6" checked onchange="toggleNotification('XX期生 物理', this.checked)">
+                        <label for="c6">XX期生 物理</label>
+                    </div>
+                    <div class="class-item">
+                        <input type="checkbox" id="c7" checked onchange="toggleNotification('XXth DDⅡ②', this.checked)">
+                        <label for="c7">XXth DDⅡ②</label>
+                    </div>
+                </div>
+                <!-- 通知頻度設定を追加（MUST機能③の強化） -->
+                <div class="settings-section-title">リマインド通知タイミング</div>
+                <div class="class-select-list" style="padding: 12px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
+                        <span>前日リマインド (19:00)</span>
+                        <input type="checkbox" checked style="width:16px; height:16px; accent-color: #2563eb;">
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px;">
+                        <span>当日朝リマインド (7:00)</span>
+                        <input type="checkbox" checked style="width:16px; height:16px; accent-color: #2563eb;">
+                    </div>
+                </div>
+        </main>
+
+        <!-- 下部ナビゲーション -->
+        <nav class="bottom-nav">
+            <div class="nav-item active" id="nav-home" onclick="switchScreen(1)">
+                <svg viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span>ホーム</span>
+            </div>
+            <div class="nav-item" id="nav-classroom" onclick="switchScreen(2)">
+                <svg viewBox="0 0 24 24">
+                    <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0-2-.9-2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/>
+                </svg>
+                <span>一括確認</span>
+            </div>
+            <div class="nav-item" id="nav-settings" onclick="switchScreen(3)">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+                <span>設定</span>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // 画面切り替えロジック
+        function switchScreen(screenNum) {
+            // 全画面とナビを非アクティブ化
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            const headerTitle = document.getElementById('dynamic-header-title');
+
+            if(screenNum === 1) {
+                document.getElementById('screen-home').classList.add('active');
+                document.getElementById('nav-home').classList.add('active');
+                headerTitle.innerText = "Reminder（仮）";
+            } else if(screenNum === 2) {
+                document.getElementById('screen-classroom').classList.add('active');
+                document.getElementById('nav-classroom').classList.add('active');
+                headerTitle.innerText = "Classroom連絡一括確認";
+            } else if(screenNum === 3) {
+                document.getElementById('screen-settings').classList.add('active');
+                document.getElementById('nav-settings').classList.add('active');
+                headerTitle.innerText = "アカウント・通知設定";
+            }
+        }
+
+        // MUST機能①: テスト・課題登録のシミュレーション機能
+        function addReminder(event) {
+            event.preventDefault();
+            const title = document.getElementById('todo-title').value;
+            const date = document.getElementById('todo-date').value;
+            const className = document.getElementById('todo-class').value;
+            // addReminder関数内の該当箇所を修正
+
+            // 一覧表示（画面2）のタイムラインの先頭に動的追加
+            const container = document.getElementById('timeline-container');
+            const newItem = document.createElement('div');
+            newItem.className = 'feed-item';
+            newItem.setAttribute('data-class', className); // ★ここを追加：選択したクラス名をデータ属性にセット
+            newItem.style.borderLeft = '4px solid #10b981'; // 自分で追加したものは緑色のアクセントに
+            newItem.innerHTML = `
+                <div class="feed-header">
+                    <div class="teacher-avatar" style="background-color:#d1fae5; color:#065f46;">自</div>
+                    <div class="teacher-name">[手動登録] ${title}</div>
+                </div>
+                <div class="feed-body">
+                    <strong>期限・実施日:</strong> ${date}<br>
+                    リマインダーとしてマイページに登録されました。
+                </div>
+                <div class="footer-links" style="margin-top:4px; padding:0; border:none;"></div>
+                <div class="feed-footer">From 「${className}」</div>
+            `;
+            
+            container.insertBefore(newItem, container.firstChild);
+
+            alert(`リマインダー「${title}」を登録しました！「一括確認」タブに追加されました。`);
+            
+            // フォームリセットと画面遷移
+            document.getElementById('reminder-form').reset();
+            switchScreen(2);
+        }
+
+        // MUST機能③: 通知設定の切り替えトグル
+        function toggleNotification(className, isChecked) {
+    // タイムライン内のすべての feed-item を取得
+    const feedItems = document.querySelectorAll('.feed-item');
+    
+    feedItems.forEach(item => {
+        // 各アイテムの data-class が、操作されたクラス名と一致するか判定
+        if (item.getAttribute('data-class') === className) {
+            if (isChecked) {
+                item.style.display = 'block'; // チェックが入ったら表示
+            } else {
+                item.style.display = 'none';  // チェックが外れたら非表示
+            }
+        }
+    });
+}
+
+
+    </script>
+</body>
+</html>
